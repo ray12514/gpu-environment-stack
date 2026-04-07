@@ -1,0 +1,25 @@
+# Spack-generated files (do not commit the live install tree)
+spack/opt/
+spack/.spack-env/
+spack/.spack-db/
+*.spack
+*.spec.lock
+
+# Build artifacts
+build-stage/
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp
+*.swo
+
+# Ansible retry files
+*.retry
+
+# System-generated external detection output is committed intentionally;
+# exclude only the scratch copy written outside the repo
+detect-externals.log

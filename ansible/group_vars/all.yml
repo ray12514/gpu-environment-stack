@@ -1,0 +1,24 @@
+---
+# ansible/group_vars/all.yml
+# Variables shared across all systems.
+# OPERATOR: set site_stack_root and repo_root before running bootstrap.
+
+# Path to the shared GPU stack install root on the cluster filesystem.
+# Must be readable by all users, writable only by the service account.
+site_stack_root: "<SITE_STACK_ROOT>"
+
+# Path to this repository on the cluster filesystem.
+repo_root: "<REPO_ROOT>"
+
+# Spack release to install. Must be a tag (e.g. v0.22.0), not 'develop'.
+spack_version: "v0.22.0"
+
+# Derived path — do not edit directly
+spack_root: "{{ site_stack_root }}/spack/{{ spack_version }}"
+
+# Release identifier for this stack deployment
+release: "2026.06"
+
+# Environment name in spack/envs/
+spack_env_name: "cray-amd-dev"
+spack_env_path: "{{ repo_root }}/spack/envs/{{ spack_env_name }}"

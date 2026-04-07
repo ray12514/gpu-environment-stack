@@ -1,0 +1,34 @@
+# spack/classes/cray-amd/compilers.yaml
+#
+# Platform-class compiler configuration for cray-amd.
+# The `modules:` key causes Spack to load the specified modules before invoking
+# this compiler — critical on Cray where compilers are only available via PrgEnv.
+#
+# Actual paths and version numbers are discovered at bootstrap time by
+# `spack compiler find` with PrgEnv-amd active, then written to
+# spack/classes/base/compilers.yaml. This file holds the template and the
+# cray-amd-specific environment variable overrides that base compilers.yaml
+# does not need to know about.
+#
+# The CRAY_CPU_TARGET variable must match the node microarchitecture.
+# For MI250X (EPYC Milan): x86-milan
+# Verify with: module show craype-x86-milan
+
+compilers:
+  - compiler:
+      spec: cce@<VERSION>      # filled in by spack compiler find
+      paths:
+        cc:  /opt/cray/pe/cce/<VERSION>/bin/craycc
+        cxx: /opt/cray/pe/cce/<VERSION>/bin/crayCC
+        f77: /opt/cray/pe/cce/<VERSION>/bin/crayftn
+        fc:  /opt/cray/pe/cce/<VERSION>/bin/crayftn
+      flags: {}
+      operating_system: <OS>   # e.g. sles15
+      target: x86_64
+      modules:
+        - PrgEnv-cray
+        - cce/<VERSION>
+      environment:
+        set:
+          CRAY_CPU_TARGET: x86-milan
+      extra_rpaths: []

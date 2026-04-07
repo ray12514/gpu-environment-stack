@@ -1,0 +1,24 @@
+---
+# T0: Confirm GPU is visible inside a PBS job on a compute node.
+
+- name: Template T0 PBS job script
+  ansible.builtin.template:
+    src: t0_gpu_job.sh.j2
+    dest: "{{ validate_evidence_dir }}/t0_gpu_job.sh"
+    mode: "0755"
+
+- name: Submit T0 GPU visibility job (qsub, block until complete)
+  ansible.builtin.command:
+    cmd: >
+      qsub -W block=true
+           -l select=1:ncpus={{ cpus_per_node }}:ngpus={{ gpus_per_node }}
+           -q {{ pbs_queue }}
+           {{ validate_evidence_dir }}/t0_gpu_job.sh
+  register: t0_submit
+  failed_when: t0_submit.rc != 0
+
+- name: Verify T0 output file exists
+  ansible.builtin.stat:
+    path: "{{ validate_evidence_dir }}/t0_rocm_smi.txt"
+  register: t0_output
+  failed_when: not t0_output.stat.exists

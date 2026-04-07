@@ -1,0 +1,10 @@
+---
+- name: Write L1 evidence bundle
+  ansible.builtin.template:
+    src: evidence_bundle.yaml.j2
+    dest: "{{ validate_evidence_dir }}/evidence.yaml"
+    mode: "0644"
+
+- name: Print evidence bundle location
+  ansible.builtin.debug:
+    msg: "L1 evidence bundle: {{ validate_evidence_dir }}/evidence.yaml"

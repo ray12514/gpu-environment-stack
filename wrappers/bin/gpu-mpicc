@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# gpu-mpicc — C compiler wrapper for the cray-amd gpu-stack.
+#
+# Delegates to the Cray PE `cc` wrapper, which resolves to the compiler
+# active in the current PrgEnv (amd, cray, gnu, etc.) with MPI and CPE
+# library paths pre-configured.
+#
+# The purpose of this wrapper is to:
+#   1. Confirm the gpu-stack module is loaded before compiling
+#   2. Provide a stable, stack-documented entry point for build systems
+#   3. Allow future stack-level flag injection without breaking user Makefiles
+
+set -uo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+exec cc "$@"

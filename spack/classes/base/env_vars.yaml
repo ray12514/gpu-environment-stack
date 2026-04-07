@@ -1,0 +1,20 @@
+# spack/classes/base/env_vars.yaml
+#
+# Environment variables set for all packages in all environments.
+# These are inherited by every spec in spack/envs/cray-amd-dev/spack.yaml.
+#
+# Note: PATH prepend and GPU_STACK_RELEASE are also set by the front-door Lmod
+# module. Redundancy here is intentional — ensures the values are present in
+# both the module environment and any Spack-activated shell.
+
+# This file is included by spack.yaml but Spack does not have a standalone
+# env_vars.yaml include mechanism. These settings are embedded in the environment
+# spack.yaml under the `modules:` or `config:` stanza as needed.
+#
+# The canonical env var source for users is the front-door module (2026.06.lua).
+# This file documents the intended values so they stay in sync.
+
+# GPU_STACK_RELEASE: "2026.06"
+# GPU_STACK_PLATFORM_CLASS: "cray-amd"
+# PYTHONNOUSERSITE: "1"
+# PATH prepend: <SITE_STACK_ROOT>/wrappers/bin

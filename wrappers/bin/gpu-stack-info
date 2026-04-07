@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# gpu-stack-info — Print release metadata for the active gpu-stack environment.
+#
+# Output is key=value lines so scripts can parse it:
+#   gpu-stack-info | grep GPU_STACK_RELEASE | cut -d= -f2
+#
+# Exits 0. This wrapper is read-only and never modifies the environment.
+
+set -uo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+echo "GPU_STACK_RELEASE=${GPU_STACK_RELEASE}"
+echo "GPU_STACK_PLATFORM_CLASS=${GPU_STACK_PLATFORM_CLASS:-<unset>}"
+echo "GPU_STACK_GPU_ARCH=${GPU_STACK_GPU_ARCH:-<unset>}"
+echo "GPU_STACK_SPACK_ROOT=${GPU_STACK_SPACK_ROOT:-<unset>}"
+echo "MPICH_GPU_SUPPORT_ENABLED=${MPICH_GPU_SUPPORT_ENABLED:-<unset>}"
+echo "FI_CXI_ATS=${FI_CXI_ATS:-<unset>}"
+echo "HSA_ENABLE_SDMA=${HSA_ENABLE_SDMA:-<unset>}"
+echo "HSA_FORCE_FINE_GRAIN_PCIE=${HSA_FORCE_FINE_GRAIN_PCIE:-<unset>}"
+echo "RCCL_NET_PLUGIN=${RCCL_NET_PLUGIN:-<unset>}"
+echo "PYTHONNOUSERSITE=${PYTHONNOUSERSITE:-<unset>}"
+
+echo ""
+echo "# Active stack-related modules:"
+module list 2>&1 \
+  | grep -E "gpu-stack|rocm|cray-mpich|cray-pals|PrgEnv" \
+  | sed 's/^/MODULE_LOADED=/' \
+  || echo "MODULE_LOADED=<module list unavailable>"

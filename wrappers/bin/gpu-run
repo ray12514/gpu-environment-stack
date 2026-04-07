@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# gpu-run — Job launcher for the cray-amd gpu-stack.
+#
+# Wraps `mpirun` (cray-pals) and re-asserts all MI250X environment variables
+# before launching. This ensures the required env vars survive PBS job
+# submission and are present inside the job even if the user's .bashrc or
+# PBS prolog partially resets the environment.
+#
+# Usage: gpu-run [mpirun options] <executable> [args...]
+#
+# Example:
+#   gpu-run -n 8 --ppn 4 ./my_app
+#   gpu-run -n 16 --ppn 8 python train.py
+#
+# All arguments are passed through to mpirun unchanged.
+
+set -uo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+# Re-assert GPU-aware MPI and MI250X runtime variables.
+# These must be set in the job environment, not just the login shell.
+export MPICH_GPU_SUPPORT_ENABLED=1
+export FI_CXI_ATS=0
+export HSA_ENABLE_SDMA=0
+export HSA_FORCE_FINE_GRAIN_PCIE=1
+export RCCL_NET_PLUGIN="${RCCL_NET_PLUGIN:-librccl-net-ofi-plugin.so}"
+export PYTHONNOUSERSITE=1
+
+exec mpirun "$@"

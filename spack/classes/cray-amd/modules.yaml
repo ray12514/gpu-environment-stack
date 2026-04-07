@@ -1,0 +1,21 @@
+# spack/classes/cray-amd/modules.yaml
+#
+# Platform-class module generation overrides for cray-amd.
+# Extends and overrides base/modules.yaml with ROCm-specific blacklist entries.
+# ROCm internal packages are never user-facing modules.
+
+modules:
+  default::
+    lmod:
+      blacklist:
+        # ROCm runtime internals — provided by the rocm module, not individually exposed
+        - rocm-smi-lib
+        - rocm-opencl-runtime
+        - comgr
+        - llvm-amdgpu
+        - rocm-device-libs
+        - hsa-rocr-dev
+        - hip-rocclr
+        - rocclr
+        # aws-ofi-rccl is a runtime plugin, not a user-loaded module
+        - aws-ofi-rccl

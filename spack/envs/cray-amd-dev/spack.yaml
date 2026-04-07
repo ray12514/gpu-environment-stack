@@ -1,0 +1,46 @@
+spack:
+  include:
+    - ../../classes/base
+    - ../../classes/cray-amd
+    - ../../systems/lodger
+
+  concretizer:
+    unify: true      # all specs share one DAG — prevents duplicate dependencies
+    reuse: true      # reuse already-installed packages where possible
+
+  view: false        # the module tree is the user interface, not a filesystem view
+
+  specs:
+    # ---- Performance portability libraries ----
+    # Built with ROCm backend and MI250X target (gfx90a)
+    - kokkos@4.3.01 +rocm amdgpu_target=gfx90a +openmp +serial
+    - raja@2024.07.0 +rocm amdgpu_target=gfx90a
+
+    # ---- Scientific frameworks ----
+    - petsc@3.21.4 +mpi +hdf5 +hypre +suite-sparse
+    - trilinos@16.0.0 +mpi +hdf5 +suite-sparse +boost
+    - amrex@24.11 +mpi +rocm amdgpu_target=gfx90a +particles +fortran
+    - heffte@2.4.0 +fftw +rocm amdgpu_target=gfx90a
+
+    # ---- Collective communication plugin ----
+    # aws-ofi-rccl routes RCCL collectives through libfabric/CXI for Slingshot
+    - aws-ofi-rccl +cxi
+
+    # ---- OSU Micro-Benchmarks ----
+    # Used by stack_validate T1 GPU-buffer MPI test
+    - osu-micro-benchmarks@6.1 +rocm
+
+    # ---- Python scientific stack ----
+    # Python runtime is a CPE external (cray-python); these are Spack-built against it
+    - py-mpi4py@3.1.6
+    - py-numpy@1.26.4
+    - py-scipy@1.13.0
+    # py-torch is NOT listed here — install from AMD ROCm pip wheel index separately:
+    #   pip install torch --index-url https://download.pytorch.org/whl/rocm<VERSION>
+    # Then declare it as an external in systems/lodger/packages.yaml pointing at
+    # the site-managed venv: $SITE_STACK_ROOT/python-envs/pytorch-rocm/
+
+  modules:
+    default::
+      enable:
+        - lmod

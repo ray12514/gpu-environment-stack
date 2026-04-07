@@ -1,0 +1,2 @@
+[lodger]
+localhost ansible_connection=local

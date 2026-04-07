@@ -1,0 +1,2 @@
+---
+osu_prefix: "{{ site_stack_root }}/gpu-stack/opt/spack"

@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -N validate-t0-gpu
+#PBS -l select=1:ncpus={{ cpus_per_node }}:ngpus={{ gpus_per_node }}
+#PBS -q {{ pbs_queue }}
+#PBS -l walltime=00:10:00
+#PBS -o {{ validate_evidence_dir }}/t0_gpu_job.log
+#PBS -e {{ validate_evidence_dir }}/t0_gpu_job.err
+#PBS -j oe
+
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module load {{ front_door_module }}
+
+rocm-smi --showproductname \
+    | tee {{ validate_evidence_dir }}/t0_rocm_smi.txt
+
+rocm-smi --showmeminfo vram \
+    | tee -a {{ validate_evidence_dir }}/t0_rocm_smi.txt
+
+echo "EXIT_CODE=$?"

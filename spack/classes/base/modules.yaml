@@ -1,0 +1,42 @@
+modules:
+  default::
+    type: lmod
+    core_compilers:
+      - gcc@system
+    hierarchy:
+      - mpi
+    roots:
+      lmod: <SITE_STACK_ROOT>/modules/lmod
+
+    projections:
+      # GPU-accelerated packages: version-arch suffix distinguishes the build
+      kokkos:  "gpu-stack/kokkos/{version}-{variants.amdgpu_target}"
+      raja:    "gpu-stack/raja/{version}-{variants.amdgpu_target}"
+      amrex:   "gpu-stack/amrex/{version}-{variants.amdgpu_target}"
+      heffte:  "gpu-stack/heffte/{version}-{variants.amdgpu_target}"
+      # All other packages: version only
+      all:     "gpu-stack/{name}/{version}"
+
+    lmod:
+      blacklist_implicits: true
+      blacklist:
+        # Category A externals — never generate module files for these
+        - hip
+        - rocm-opencl-runtime
+        - rocm-smi-lib
+        - cray-mpich
+        - cray-pals
+        - libfabric
+        # Category B externals on Cray — provided by CPE
+        - cray-libsci
+        - hdf5
+        - fftw
+        - netcdf-c
+        - python
+        # ROCm internals — not user-facing modules
+        - comgr
+        - llvm-amdgpu
+        - rocm-device-libs
+        - hsa-rocr-dev
+      verbose: true
+      hash_length: 0   # human-readable module names; no hash suffix

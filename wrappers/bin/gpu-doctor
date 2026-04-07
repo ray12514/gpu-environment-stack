@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# gpu-doctor — Read-only diagnostic for the cray-amd gpu-stack environment.
+#
+# Runs a series of checks and prints PASS/FAIL with remediation hints.
+# Exits 0 if all checks pass, 1 if any check fails.
+# Never modifies the environment or writes to the filesystem.
+
+set -uo pipefail
+
+PASS=0
+FAIL=0
+
+_pass() { echo "  [PASS] $1"; ((PASS++)) || true; }
+_fail() { echo "  [FAIL] $1"; ((FAIL++)) || true; }
+_hint() { echo "         HINT: $*"; }
+_info() { echo "         $*"; }
+
+check() {
+  local label="$1"; shift
+  if "$@" &>/dev/null 2>&1; then
+    _pass "${label}"
+  else
+    _fail "${label}"
+    return 1
+  fi
+}
+
+echo "=== gpu-doctor: ${GPU_STACK_RELEASE:-<module not loaded>} / ${GPU_STACK_PLATFORM_CLASS:-<unset>} ==="
+echo ""
+
+# ---- 1. Stack module loaded ----
+if [[ -n "${GPU_STACK_RELEASE:-}" ]]; then
+  _pass "GPU_STACK_RELEASE is set (${GPU_STACK_RELEASE})"
+else
+  _fail "GPU_STACK_RELEASE is not set — gpu-stack module is not loaded"
+  _hint "Run: module load gpu-stack/cray-amd/2026.06"
+  echo ""
+  echo "All remaining checks require the stack module. Exiting."
+  exit 1
+fi
+
+# ---- 2. rocm-smi available ----
+if command -v rocm-smi &>/dev/null; then
+  _pass "rocm-smi is on PATH"
+else
+  _fail "rocm-smi not found on PATH"
+  _hint "Ensure the rocm module is loaded (should be done by the front-door module)"
+fi
+
+# ---- 3. rocm-smi exits 0 ----
+if rocm-smi --showproductname &>/dev/null 2>&1; then
+  GPU_NAME=$(rocm-smi --showproductname 2>/dev/null | grep -i "card\|gpu" | head -1 | sed 's/.*: //' || echo "unknown")
+  _pass "rocm-smi --showproductname exits 0 (${GPU_NAME})"
+else
+  _fail "rocm-smi --showproductname failed"
+  _hint "Check that the rocm module version matches the installed driver"
+fi
+
+# ---- 4. GPU arch check ----
+EXPECTED_ARCH="${GPU_STACK_GPU_ARCH:-gfx90a}"
+if command -v rocminfo &>/dev/null; then
+  DETECTED_ARCH=$(rocminfo 2>/dev/null | grep -E "^\s+Name:\s+gfx" | head -1 | awk '{print $2}' || true)
+  if [[ "${DETECTED_ARCH}" == "${EXPECTED_ARCH}" ]]; then
+    _pass "GPU arch matches expected (${EXPECTED_ARCH})"
+  elif [[ -z "${DETECTED_ARCH}" ]]; then
+    _fail "rocminfo: could not detect GPU arch"
+    _hint "Verify ROCm is correctly installed and the GPU is accessible"
+  else
+    _fail "GPU arch mismatch: expected ${EXPECTED_ARCH}, got ${DETECTED_ARCH}"
+    _hint "This stack was built for ${EXPECTED_ARCH} — wrong GPU or module version"
+  fi
+else
+  _fail "rocminfo not found — cannot verify GPU arch"
+  _hint "Load the rocm module: module load rocm"
+fi
+
+# ---- 5. MPICH GPU support ----
+if [[ "${MPICH_GPU_SUPPORT_ENABLED:-}" == "1" ]]; then
+  _pass "MPICH_GPU_SUPPORT_ENABLED=1"
+else
+  _fail "MPICH_GPU_SUPPORT_ENABLED is not 1 (got: '${MPICH_GPU_SUPPORT_ENABLED:-<unset>}')"
+  _hint "Load the front-door module: module load gpu-stack/cray-amd/2026.06"
+fi
+
+# ---- 6. Slingshot / RCCL env vars ----
+if [[ "${FI_CXI_ATS:-}" == "0" ]]; then
+  _pass "FI_CXI_ATS=0 (required for RCCL on Slingshot)"
+else
+  _fail "FI_CXI_ATS is not 0 (got: '${FI_CXI_ATS:-<unset>}')"
+  _hint "FI_CXI_ATS=0 is mandatory for RCCL on HPE Slingshot — load the stack module"
+fi
+
+if [[ "${HSA_ENABLE_SDMA:-}" == "0" ]]; then
+  _pass "HSA_ENABLE_SDMA=0"
+else
+  _fail "HSA_ENABLE_SDMA is not 0 (got: '${HSA_ENABLE_SDMA:-<unset>}')"
+  _hint "Required to prevent SDMA conflicts on MI250X"
+fi
+
+if [[ "${HSA_FORCE_FINE_GRAIN_PCIE:-}" == "1" ]]; then
+  _pass "HSA_FORCE_FINE_GRAIN_PCIE=1"
+else
+  _fail "HSA_FORCE_FINE_GRAIN_PCIE is not 1 (got: '${HSA_FORCE_FINE_GRAIN_PCIE:-<unset>}')"
+  _hint "Required for GPU-NIC direct memory access on MI250X"
+fi
+
+if [[ -n "${RCCL_NET_PLUGIN:-}" ]]; then
+  _pass "RCCL_NET_PLUGIN is set (${RCCL_NET_PLUGIN})"
+else
+  _fail "RCCL_NET_PLUGIN is not set"
+  _hint "aws-ofi-rccl plugin not configured — RCCL multi-node will fall back to TCP"
+fi
+
+# ---- 7. Python isolation ----
+if [[ "${PYTHONNOUSERSITE:-}" == "1" ]]; then
+  _pass "PYTHONNOUSERSITE=1"
+else
+  _fail "PYTHONNOUSERSITE is not 1"
+  _hint "User ~/.local Python packages may contaminate the stack environment"
+fi
+
+# ---- 8. mpirun available (cray-pals) ----
+if command -v mpirun &>/dev/null; then
+  MPIRUN_PATH=$(command -v mpirun)
+  _pass "mpirun is on PATH (${MPIRUN_PATH})"
+else
+  _fail "mpirun not found — cray-pals may not be loaded"
+  _hint "Ensure cray-pals is loaded (done by the front-door module)"
+fi
+
+# ---- 9. PyTorch ROCm (non-fatal) ----
+echo ""
+echo "  [INFO] PyTorch ROCm check (non-fatal):"
+if python3 -c "import torch; v=torch.version.hip; print(f'         torch={torch.__version__} hip={v}')" 2>/dev/null; then
+  _pass "PyTorch with ROCm is importable"
+else
+  echo "         [SKIP] PyTorch not importable — activate a gpu-venv first or install from AMD ROCm wheel"
+fi
+
+# ---- Summary ----
+echo ""
+echo "=== Summary: ${PASS} passed, ${FAIL} failed ==="
+
+[[ "${FAIL}" -eq 0 ]] && exit 0 || exit 1

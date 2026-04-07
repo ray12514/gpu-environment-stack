@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# gpu-mpicxx — C++ compiler wrapper for the cray-amd gpu-stack.
+#
+# Delegates to the Cray PE `CC` wrapper (note: uppercase).
+# Resolves to the C++ compiler for the active PrgEnv with MPI and CPE paths.
+
+set -uo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+exec CC "$@"

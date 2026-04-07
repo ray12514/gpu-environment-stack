@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# gpu-venv — Create a Python virtual environment chained to the stack PyTorch install.
+#
+# The created venv inherits the stack's site-packages (including PyTorch ROCm,
+# numpy, scipy, mpi4py) via --system-site-packages. Users can then pip-install
+# additional packages into their own venv without touching the site baseline.
+#
+# Usage:
+#   gpu-venv <path-to-venv>
+#   gpu-venv ~/my-project/venv
+#
+# After creation:
+#   source <path-to-venv>/bin/activate
+#   pip install <user-packages>
+
+set -euo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+VENV_PATH="${1:?Usage: gpu-venv <path-to-venv>}"
+
+# Site-managed PyTorch ROCm venv — users inherit from this
+SITE_PYTORCH_VENV="${GPU_STACK_SPACK_ROOT:+$(dirname "${GPU_STACK_SPACK_ROOT}")/python-envs/pytorch-rocm}"
+
+if [[ -d "${VENV_PATH}" ]]; then
+  echo "ERROR: ${VENV_PATH} already exists. Remove it first or choose a different path." >&2
+  exit 1
+fi
+
+echo "Creating venv at: ${VENV_PATH}"
+echo "Inheriting site-packages from: ${GPU_STACK_RELEASE} stack"
+
+python3 -m venv --system-site-packages "${VENV_PATH}"
+
+# Write a pth file that explicitly includes the stack's site-packages directory
+# so the venv can find PyTorch even if the module path differs slightly
+if [[ -n "${SITE_PYTORCH_VENV:-}" && -d "${SITE_PYTORCH_VENV}/lib" ]]; then
+  SITE_PKG=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
+  VENV_SITE=$(find "${VENV_PATH}/lib" -name "site-packages" -maxdepth 3 | head -1)
+  if [[ -n "${VENV_SITE}" && -n "${SITE_PKG}" ]]; then
+    echo "${SITE_PKG}" > "${VENV_SITE}/gpu-stack-pytorch.pth"
+  fi
+fi
+
+echo ""
+echo "Virtual environment created."
+echo "Activate with:"
+echo "  source ${VENV_PATH}/bin/activate"
+echo ""
+echo "To install packages:"
+echo "  pip install <package>"
+echo ""
+echo "Note: PYTHONNOUSERSITE=1 is set by the stack module to prevent"
+echo "~/.local packages from contaminating this environment."

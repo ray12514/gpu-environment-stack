@@ -1,0 +1,36 @@
+---
+- name: Create evidence directory
+  ansible.builtin.file:
+    path: "{{ validate_evidence_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Load front-door module and confirm gpu-stack-info runs
+  ansible.builtin.shell: |
+    source /etc/profile.d/modules.sh 2>/dev/null || true
+    module load {{ front_door_module }}
+    gpu-stack-info
+  args:
+    executable: /bin/bash
+  register: preflight_stack_info
+  failed_when: preflight_stack_info.rc != 0
+
+- name: Run gpu-doctor
+  ansible.builtin.shell: |
+    source /etc/profile.d/modules.sh 2>/dev/null || true
+    module load {{ front_door_module }}
+    gpu-doctor
+  args:
+    executable: /bin/bash
+  register: preflight_gpu_doctor
+  # gpu-doctor exits nonzero on failures — capture output, do not abort here
+  failed_when: false
+
+- name: Show gpu-doctor output
+  ansible.builtin.debug:
+    msg: "{{ preflight_gpu_doctor.stdout_lines }}"
+
+- name: Warn if gpu-doctor reported failures
+  ansible.builtin.debug:
+    msg: "WARNING: gpu-doctor reported failures. Check output above before proceeding."
+  when: preflight_gpu_doctor.rc != 0

@@ -1,0 +1,68 @@
+# spack/classes/base/packages.yaml
+#
+# OS-provided system library externals. These are populated by running:
+#   spack external find openssl cmake m4 git perl pkgconf zlib
+# during the stack_env_install bootstrap step.
+#
+# These entries are safe to commit — they reference stable OS paths that do not
+# change between CPE releases. Do not include MPI, compilers, BLAS, HDF5, or
+# any package provided by CPE here. Those belong in classes/cray-amd/packages.yaml
+# and systems/lodger/packages.yaml.
+
+packages:
+  openssl:
+    buildable: false
+    externals:
+      - spec: openssl@<VERSION>
+        prefix: /usr
+
+  cmake:
+    buildable: false
+    externals:
+      - spec: cmake@<VERSION>
+        prefix: /usr
+
+  m4:
+    buildable: false
+    externals:
+      - spec: m4@<VERSION>
+        prefix: /usr
+
+  git:
+    buildable: false
+    externals:
+      - spec: git@<VERSION>
+        prefix: /usr
+
+  perl:
+    buildable: false
+    externals:
+      - spec: perl@<VERSION>
+        prefix: /usr
+
+  pkgconf:
+    buildable: false
+    externals:
+      - spec: pkgconf@<VERSION>
+        prefix: /usr
+
+  zlib:
+    buildable: false
+    externals:
+      - spec: zlib@<VERSION>
+        prefix: /usr
+
+  zlib-ng:
+    buildable: true   # let Spack build this — not always OS-provided
+
+  tar:
+    buildable: false
+    externals:
+      - spec: tar@<VERSION>
+        prefix: /usr
+
+  diffutils:
+    buildable: false
+    externals:
+      - spec: diffutils@<VERSION>
+        prefix: /usr

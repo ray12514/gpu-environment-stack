@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# gpu-mpifc — Fortran compiler wrapper for the cray-amd gpu-stack.
+#
+# Delegates to the Cray PE `ftn` wrapper, which resolves to the Fortran
+# compiler for the active PrgEnv (CCE Fortran, AMD Flang, or GNU Fortran)
+# with MPI and CPE library paths pre-configured.
+#
+# The name `gpu-mpifc` is generic and intentional — it works regardless of
+# which Fortran compiler is active in the loaded PrgEnv.
+
+set -uo pipefail
+
+: "${GPU_STACK_RELEASE:?gpu-stack module is not loaded. Run: module load gpu-stack/cray-amd/2026.06}"
+
+exec ftn "$@"

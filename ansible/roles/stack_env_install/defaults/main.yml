@@ -1,0 +1,3 @@
+---
+spack_concretize_flags: "-f"
+spack_install_flags: "--fail-fast"
