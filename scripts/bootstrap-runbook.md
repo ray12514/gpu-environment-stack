@@ -14,6 +14,8 @@ Before starting:
 - [ ] ROCm is available: `module avail rocm`
 - [ ] Git is available: `git --version`
 - [ ] The cluster runs PBS and cray-pals is available: `module avail cray-pals`
+- [ ] (Recommended) `clusterinspector` is installed and on PATH — bootstrap will capture a
+  system profile automatically if it is available. Without it, no system profile is recorded.
 
 ## Step 1 — Clone this repository
 
@@ -73,6 +75,8 @@ bash scripts/bootstrap.sh
 
 The script runs these steps in order:
 
+0. If `clusterinspector` is on PATH, captures a system profile to
+   `$EVIDENCE_DIR/system-profile.yaml` before any changes are made
 1. Installs Spack to `$SITE_STACK_ROOT/spack/$SPACK_VERSION` (skips if already present)
 2. Runs `detect-externals.sh` → writes `spack/systems/${SYSTEM_NAME}/packages.yaml`
 3. Runs `spack external find` for OS libraries

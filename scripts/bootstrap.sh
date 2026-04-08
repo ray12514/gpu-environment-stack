@@ -87,10 +87,30 @@ _check_placeholder() {
 
 _check_placeholder "SITE_STACK_ROOT" "${SITE_STACK_ROOT}"
 _check_placeholder "SYSTEM_NAME"     "${SYSTEM_NAME}"
-_check_placeholder "SPACK_VERSION"   "${SPACK_VERSION}"
+
+# Resolve SPACK_VERSION="latest" to the current stable release tag
+if [[ "${SPACK_VERSION}" == "latest" ]]; then
+    echo "  Resolving SPACK_VERSION=latest via GitHub API..."
+    SPACK_VERSION=$(curl -sf "https://api.github.com/repos/spack/spack/releases/latest" \
+        | grep '"tag_name"' | cut -d'"' -f4) || true
+    if [[ -z "${SPACK_VERSION}" ]]; then
+        echo "ERROR: Could not fetch latest Spack release from GitHub API."
+        echo "       Set SPACK_VERSION explicitly in config/system.env, e.g. v0.23.1"
+        exit 1
+    fi
+    SPACK_ROOT="${SITE_STACK_ROOT}/spack/${SPACK_VERSION}"
+    echo "  SPACK_VERSION resolved to: ${SPACK_VERSION}"
+fi
+
+if [[ -z "${SPACK_VERSION}" || "${SPACK_VERSION}" == *"<"* ]]; then
+    echo "ERROR: SPACK_VERSION is not set or still contains a placeholder."
+    echo "       Set it to a release tag (e.g. v0.23.1) or keep 'latest' in config/system.env."
+    exit 1
+fi
 
 if [[ ! "${SPACK_VERSION}" =~ ^v ]]; then
-    echo "ERROR: SPACK_VERSION must start with 'v', e.g. v0.23.1 (got: ${SPACK_VERSION})"
+    echo "ERROR: SPACK_VERSION must be a release tag starting with 'v', e.g. v0.23.1"
+    echo "       (or use 'latest' to auto-resolve). Got: ${SPACK_VERSION}"
     exit 1
 fi
 
@@ -104,6 +124,23 @@ if [[ "${DRY_RUN}" -eq 0 && ! -w "${SITE_STACK_ROOT}" ]]; then
     echo "ERROR: SITE_STACK_ROOT is not writable: ${SITE_STACK_ROOT}"
     echo "       Create it first: mkdir -p ${SITE_STACK_ROOT}"
     exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Step 0: Capture pre-bootstrap system profile (clusterinspector, if available)
+# ---------------------------------------------------------------------------
+
+if command -v clusterinspector &>/dev/null; then
+    echo "--- Step 0: Capture system profile (clusterinspector) ---"
+    run mkdir -p "${EVIDENCE_DIR}"
+    run_write "${EVIDENCE_DIR}/system-profile.yaml" \
+        clusterinspector profile --local --format yaml --system-name "${SYSTEM_NAME}"
+    echo "  System profile saved to ${EVIDENCE_DIR}/system-profile.yaml"
+    echo ""
+else
+    echo "--- Step 0: clusterinspector not found — skipping system profile capture ---"
+    echo "         Install clusterinspector for automated system characterization."
+    echo ""
 fi
 
 # ---------------------------------------------------------------------------

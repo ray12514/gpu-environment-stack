@@ -76,7 +76,18 @@ gpu-stack-info
 echo ""
 echo "--- Pre-flight: gpu-doctor (GPU hardware checks skipped on login node) ---"
 gpu-doctor
+
 echo ""
+SYSTEM_PROFILE_ARTIFACT=""
+if command -v clusterinspector &>/dev/null; then
+    echo "--- Pre-flight: clusterinspector system profile ---"
+    clusterinspector profile --local --format yaml \
+        --system-name "${SYSTEM_NAME}" \
+        > "${EVIDENCE_DIR}/system-profile.yaml" 2>/dev/null \
+        && SYSTEM_PROFILE_ARTIFACT="${EVIDENCE_DIR}/system-profile.yaml" \
+        || echo "  WARNING: clusterinspector profile failed — continuing without profile"
+    echo ""
+fi
 
 # ---------------------------------------------------------------------------
 # Helper: build and submit a PBS job, block until complete
@@ -167,6 +178,7 @@ results:
     capability: environment
     result: pass
     command: "gpu-stack-info"
+    system_profile: "${SYSTEM_PROFILE_ARTIFACT:-not captured}"
 
   t0_gpu_visible:
     capability: T0
