@@ -2,7 +2,7 @@
 #
 # Platform-class externals for cray-amd systems.
 # Provides: declarations for Category A and B packages.
-# Real version strings and module names are in systems/lodger/packages.yaml.
+# Real version strings and module names are in systems/${SYSTEM_NAME}/packages.yaml.
 #
 # The `providers` block prevents Spack from silently resolving abstract
 # dependencies (mpi, blas, lapack) to packages we do not want to build.
@@ -38,7 +38,7 @@ packages:
     buildable: false
     externals:
       - spec: libfabric@1.x +cxi
-        prefix: /usr   # actual prefix verified at bootstrap; override in systems/lodger
+        prefix: /usr   # actual prefix verified at bootstrap; override in systems/${SYSTEM_NAME}
 
   cray-mpich:
     buildable: false

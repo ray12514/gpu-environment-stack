@@ -2,7 +2,7 @@ spack:
   include:
     - ../../classes/base
     - ../../classes/cray-amd
-    - ../../systems/lodger
+    - ../../systems/SYSTEM_NAME
 
   concretizer:
     unify: true      # all specs share one DAG — prevents duplicate dependencies
@@ -37,7 +37,7 @@ spack:
     - py-scipy@1.13.0
     # py-torch is NOT listed here — install from AMD ROCm pip wheel index separately:
     #   pip install torch --index-url https://download.pytorch.org/whl/rocm<VERSION>
-    # Then declare it as an external in systems/lodger/packages.yaml pointing at
+    # Then declare it as an external in systems/${SYSTEM_NAME}/packages.yaml pointing at
     # the site-managed venv: $SITE_STACK_ROOT/python-envs/pytorch-rocm/
 
   modules:

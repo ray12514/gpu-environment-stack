@@ -1,0 +1,25 @@
+# config/pbs_resources.template
+#
+# PBS resource directives for this system. Edit this file once for your cluster.
+# validate.sh reads it and injects these directives into each job script
+# before submitting via qsub.
+#
+# On Cray systems with GPUs there is typically no queue — GPUs are requested
+# directly via the select resource. The exact syntax varies by site.
+# Fill in the correct values for your system below.
+#
+# Replace <CPUS>, <GPUS>, <MEM> with your system's per-node values, e.g.:
+#   ncpus=64   ngpus=8   mem=512gb
+#
+# ---------------------------------------------------------------------------
+# Single-node jobs (T0 GPU visibility check)
+# ---------------------------------------------------------------------------
+T0_PBS_RESOURCES="#PBS -l select=1:ncpus=<CPUS>:ngpus=<GPUS>
+#PBS -l walltime=00:15:00"
+
+# ---------------------------------------------------------------------------
+# Multi-node jobs (T1 OSU bandwidth/latency and ML smoke test)
+# validate.sh substitutes ${VALIDATE_NODE_COUNT} from system.env here.
+# ---------------------------------------------------------------------------
+TN_PBS_RESOURCES="#PBS -l select=<VALIDATE_NODE_COUNT>:ncpus=<CPUS>:ngpus=<GPUS>:mpiprocs=<GPUS>
+#PBS -l walltime=00:30:00"

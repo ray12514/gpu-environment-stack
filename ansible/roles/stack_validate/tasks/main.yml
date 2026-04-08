@@ -1,6 +1,0 @@
----
-- import_tasks: preflight.yml
-- import_tasks: t0_gpu_visible.yml
-- import_tasks: t1_gpu_mpi.yml
-- import_tasks: ml_smoke.yml
-- import_tasks: evidence.yml

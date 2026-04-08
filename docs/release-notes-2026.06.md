@@ -2,7 +2,7 @@
 
 Release identifier: `2026.06`
 Platform class: `cray-amd`
-System: `lodger`
+System: `<SYSTEM_NAME>`
 Status: initial
 
 ## What Is In This Release
@@ -35,7 +35,7 @@ Status: initial
 | NetCDF-C | `<VERSION>` | cray-netcdf-hdf5parallel |
 | Python | `<VERSION>` | cray-python |
 
-_Fill in actual versions from `spack/systems/lodger/packages.yaml` after detection._
+_Fill in actual versions from `spack/systems/${SYSTEM_NAME}/packages.yaml` after detection._
 
 ## Validation Status
 
@@ -45,7 +45,7 @@ _Fill in actual versions from `spack/systems/lodger/packages.yaml` after detecti
 | T1: GPU-buffer MPI | pending | — |
 | ML smoke: LLaMA-1B | pending | — |
 
-_Update after running `ansible-playbook ... --tags stack_validate`._
+_Update after running `bash scripts/validate.sh`._
 
 ## Known Limitations
 

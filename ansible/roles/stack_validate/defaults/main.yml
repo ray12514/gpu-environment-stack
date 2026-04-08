@@ -1,6 +1,0 @@
----
-validate_evidence_dir: "{{ site_stack_root }}/evidence/{{ release }}/{{ inventory_hostname }}"
-osu_bw_regression_threshold_pct: 5
-ml_regression_threshold_pct: 5
-validate_baseline_file: ""       # set to a prior evidence.yaml to enable regression checks
-validate_fail_on_regression: false

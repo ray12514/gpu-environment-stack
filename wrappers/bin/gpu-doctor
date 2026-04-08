@@ -9,9 +9,11 @@ set -uo pipefail
 
 PASS=0
 FAIL=0
+SKIP=0
 
 _pass() { echo "  [PASS] $1"; ((PASS++)) || true; }
 _fail() { echo "  [FAIL] $1"; ((FAIL++)) || true; }
+_skip() { echo "  [SKIP] $1"; ((SKIP++)) || true; }
 _hint() { echo "         HINT: $*"; }
 _info() { echo "         $*"; }
 
@@ -39,39 +41,55 @@ else
   exit 1
 fi
 
-# ---- 2. rocm-smi available ----
-if command -v rocm-smi &>/dev/null; then
-  _pass "rocm-smi is on PATH"
-else
-  _fail "rocm-smi not found on PATH"
-  _hint "Ensure the rocm module is loaded (should be done by the front-door module)"
+# ---- Auto-detect: are we on a GPU node? ----
+# rocm-smi succeeds on compute nodes; fails on login nodes where no GPU is visible.
+ON_GPU_NODE=0
+if command -v rocm-smi &>/dev/null && rocm-smi --showproductname &>/dev/null 2>&1; then
+  ON_GPU_NODE=1
 fi
 
-# ---- 3. rocm-smi exits 0 ----
-if rocm-smi --showproductname &>/dev/null 2>&1; then
+if [[ "${ON_GPU_NODE}" -eq 0 ]]; then
+  echo "  [INFO] Login node detected (no GPU visible to rocm-smi)."
+  echo "         GPU hardware checks 2-4 are skipped — run gpu-doctor on a compute node"
+  echo "         to verify GPU visibility and architecture."
+  echo ""
+fi
+
+# ---- 2. rocm-smi available ----
+if [[ "${ON_GPU_NODE}" -eq 1 ]]; then
+  _pass "rocm-smi is on PATH and GPU is visible"
+else
+  _skip "rocm-smi GPU check (not on a GPU node)"
+fi
+
+# ---- 3. rocm-smi GPU name ----
+if [[ "${ON_GPU_NODE}" -eq 1 ]]; then
   GPU_NAME=$(rocm-smi --showproductname 2>/dev/null | grep -i "card\|gpu" | head -1 | sed 's/.*: //' || echo "unknown")
   _pass "rocm-smi --showproductname exits 0 (${GPU_NAME})"
 else
-  _fail "rocm-smi --showproductname failed"
-  _hint "Check that the rocm module version matches the installed driver"
+  _skip "rocm-smi product name (not on a GPU node)"
 fi
 
 # ---- 4. GPU arch check ----
 EXPECTED_ARCH="${GPU_STACK_GPU_ARCH:-gfx90a}"
-if command -v rocminfo &>/dev/null; then
-  DETECTED_ARCH=$(rocminfo 2>/dev/null | grep -E "^\s+Name:\s+gfx" | head -1 | awk '{print $2}' || true)
-  if [[ "${DETECTED_ARCH}" == "${EXPECTED_ARCH}" ]]; then
-    _pass "GPU arch matches expected (${EXPECTED_ARCH})"
-  elif [[ -z "${DETECTED_ARCH}" ]]; then
-    _fail "rocminfo: could not detect GPU arch"
-    _hint "Verify ROCm is correctly installed and the GPU is accessible"
+if [[ "${ON_GPU_NODE}" -eq 1 ]]; then
+  if command -v rocminfo &>/dev/null; then
+    DETECTED_ARCH=$(rocminfo 2>/dev/null | grep -E "^\s+Name:\s+gfx" | head -1 | awk '{print $2}' || true)
+    if [[ "${DETECTED_ARCH}" == "${EXPECTED_ARCH}" ]]; then
+      _pass "GPU arch matches expected (${EXPECTED_ARCH})"
+    elif [[ -z "${DETECTED_ARCH}" ]]; then
+      _fail "rocminfo: could not detect GPU arch"
+      _hint "Verify ROCm is correctly installed and the GPU is accessible"
+    else
+      _fail "GPU arch mismatch: expected ${EXPECTED_ARCH}, got ${DETECTED_ARCH}"
+      _hint "This stack was built for ${EXPECTED_ARCH} — wrong GPU or module version"
+    fi
   else
-    _fail "GPU arch mismatch: expected ${EXPECTED_ARCH}, got ${DETECTED_ARCH}"
-    _hint "This stack was built for ${EXPECTED_ARCH} — wrong GPU or module version"
+    _fail "rocminfo not found — cannot verify GPU arch"
+    _hint "Load the rocm module: module load rocm"
   fi
 else
-  _fail "rocminfo not found — cannot verify GPU arch"
-  _hint "Load the rocm module: module load rocm"
+  _skip "GPU arch check (not on a GPU node)"
 fi
 
 # ---- 5. MPICH GPU support ----
@@ -139,6 +157,6 @@ fi
 
 # ---- Summary ----
 echo ""
-echo "=== Summary: ${PASS} passed, ${FAIL} failed ==="
+echo "=== Summary: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped ==="
 
 [[ "${FAIL}" -eq 0 ]] && exit 0 || exit 1

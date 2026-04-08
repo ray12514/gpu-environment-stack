@@ -1,7 +1,7 @@
 # Cray-AMD Platform Notes
 
 Platform class `cray-amd` covers Cray systems with AMD GPUs. This document records
-MI250X-specific requirements, known constraints, and operational details for lodger.
+MI250X-specific requirements, known constraints, and operational details for cray-amd systems.
 
 ## GPU Architecture
 
@@ -35,7 +35,7 @@ PyTorch is **not** built by Spack. Use the AMD ROCm pip wheel index:
 # 1. Create a site-managed venv
 python3 -m venv $SITE_STACK_ROOT/python-envs/pytorch-rocm
 
-# 2. Install PyTorch for the ROCm version on lodger
+# 2. Install PyTorch for the ROCm version on this system
 #    Check the loaded ROCm version: module list | grep rocm
 source $SITE_STACK_ROOT/python-envs/pytorch-rocm/bin/activate
 pip install torch torchvision torchaudio \
@@ -71,7 +71,7 @@ If RCCL collective hangs or shows degraded performance:
 
 ROCm version must be aligned with the CPE release. Mixing ROCm versions with a
 different CPE release can cause cray-mpich GTL failures. The ROCm version is
-pinned in `systems/lodger/packages.yaml`.
+pinned in `systems/${SYSTEM_NAME}/packages.yaml`.
 
 To check the current alignment:
 

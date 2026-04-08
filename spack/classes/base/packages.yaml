@@ -7,7 +7,7 @@
 # These entries are safe to commit — they reference stable OS paths that do not
 # change between CPE releases. Do not include MPI, compilers, BLAS, HDF5, or
 # any package provided by CPE here. Those belong in classes/cray-amd/packages.yaml
-# and systems/lodger/packages.yaml.
+# and systems/${SYSTEM_NAME}/packages.yaml.
 
 packages:
   openssl:

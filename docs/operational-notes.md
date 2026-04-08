@@ -1,13 +1,13 @@
-# Operational Notes — lodger
+# Operational Notes — `<SYSTEM_NAME>`
 
-System-specific notes for the lodger deployment. Update this file as operational
+System-specific notes for this deployment. Update this file as operational
 knowledge accumulates. Do not put information here that belongs in a schema or config.
 
 ## System Details
 
 | Property | Value |
 |---|---|
-| System name | lodger |
+| System name | `<SYSTEM_NAME>` |
 | Platform class | cray-amd |
 | GPU | AMD MI250X (gfx90a) |
 | Scheduler | PBS + cray-pals |
