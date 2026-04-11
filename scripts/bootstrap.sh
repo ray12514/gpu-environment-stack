@@ -128,17 +128,40 @@ fi
 
 # ---------------------------------------------------------------------------
 # Step 0: Capture pre-bootstrap system profile (clusterinspector, if available)
+#         If clusterinspector is present, also generate the Spack packages.yaml
+#         for this system directly from the profile. This replaces the manual
+#         module interrogation in detect-externals.sh for sites that have
+#         clusterinspector installed.
 # ---------------------------------------------------------------------------
 
+CLUSTERINSPECTOR_PACKAGES_YAML=""   # set below if clusterinspector generates it
+
 if command -v clusterinspector &>/dev/null; then
-    echo "--- Step 0: Capture system profile (clusterinspector) ---"
+    echo "--- Step 0: Capture system profile and generate Spack externals (clusterinspector) ---"
     run mkdir -p "${EVIDENCE_DIR}"
-    run_write "${EVIDENCE_DIR}/system-profile.yaml" \
-        clusterinspector profile --local --format yaml --system-name "${SYSTEM_NAME}"
-    echo "  System profile saved to ${EVIDENCE_DIR}/system-profile.yaml"
+
+    PROFILE_JSON="${EVIDENCE_DIR}/system-profile.json"
+    SYSTEM_PACKAGES_YAML="${REPO_ROOT}/spack/systems/${SYSTEM_NAME}/packages.yaml"
+
+    # Capture full profile as JSON (kept as evidence artifact)
+    run_write "${PROFILE_JSON}" \
+        clusterinspector profile --local --format json --system-name "${SYSTEM_NAME}"
+    echo "  Profile JSON saved to ${PROFILE_JSON}"
+
+    # Generate spack/systems/${SYSTEM_NAME}/packages.yaml from the profile
+    if [[ "${DRY_RUN}" -eq 0 ]]; then
+        run mkdir -p "$(dirname "${SYSTEM_PACKAGES_YAML}")"
+        clusterinspector generate spack-packages "${PROFILE_JSON}" \
+            --output "${SYSTEM_PACKAGES_YAML}"
+        echo "  Spack packages.yaml written to ${SYSTEM_PACKAGES_YAML}"
+        CLUSTERINSPECTOR_PACKAGES_YAML="${SYSTEM_PACKAGES_YAML}"
+    else
+        echo "[DRY-RUN] clusterinspector generate spack-packages ${PROFILE_JSON} --output ${SYSTEM_PACKAGES_YAML}"
+        CLUSTERINSPECTOR_PACKAGES_YAML="${SYSTEM_PACKAGES_YAML}"  # treat as done in dry-run
+    fi
     echo ""
 else
-    echo "--- Step 0: clusterinspector not found — skipping system profile capture ---"
+    echo "--- Step 0: clusterinspector not found — will fall back to detect-externals.sh in Step 2 ---"
     echo "         Install clusterinspector for automated system characterization."
     echo ""
 fi
@@ -173,20 +196,29 @@ if [[ "${SKIP_BUILD}" -eq 1 ]]; then
 else
     # -------------------------------------------------------------------------
     # Step 2: Detect CPE externals → spack/systems/${SYSTEM_NAME}/packages.yaml
+    #         Skipped if clusterinspector already wrote the file in Step 0.
     # -------------------------------------------------------------------------
 
     echo ""
-    echo "--- Step 2: Detect CPE externals ---"
-    run bash "${SCRIPT_DIR}/detect-externals.sh"
+    if [[ -n "${CLUSTERINSPECTOR_PACKAGES_YAML}" ]]; then
+        echo "--- Step 2: Skipping detect-externals.sh (clusterinspector wrote packages.yaml in Step 0) ---"
+    else
+        echo "--- Step 2: Detect CPE externals (fallback: detect-externals.sh) ---"
+        run bash "${SCRIPT_DIR}/detect-externals.sh"
+    fi
 
     # -------------------------------------------------------------------------
     # Step 3: spack external find (OS libraries → classes/base/packages.yaml)
     # -------------------------------------------------------------------------
 
     echo ""
-    echo "--- Step 3: spack external find (OS libraries) ---"
+    echo "--- Step 3: spack external find (OS security + build utilities) ---"
+    # Targeted list only — no bare 'spack external find' which over-discovers on Cray.
+    # cmake is intentionally excluded: system cmake is often too old; let Spack build it.
+    # CPE-provided packages (MPI, ROCm, libsci, python) are handled by clusterinspector
+    # (Step 0) or detect-externals.sh (Step 2) and must not appear here.
     run spack external find --scope "${REPO_ROOT}/spack/classes/base" \
-        openssl cmake perl python3
+        openssl zlib m4 git perl pkgconf libtool autoconf automake
 
     # -------------------------------------------------------------------------
     # Step 4: spack compiler find → classes/base/compilers.yaml
