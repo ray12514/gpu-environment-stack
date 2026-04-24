@@ -6,9 +6,6 @@ config:
   build_stage:
     - <SITE_STACK_ROOT>/build-stage/$user/$spack
 
-  module_roots:
-    lmod: <SITE_STACK_ROOT>/modules/lmod
-
   shared_linking:
     type: rpath
     bind: false
@@ -20,5 +17,7 @@ config:
 
   connect_timeout: 30
 
-  # Prevent Spack from modifying the user's shell config files
-  suppress_gpg_warnings: true
+  # Note: `module_roots` is not a valid config.yaml key — module roots belong in
+  # modules.yaml under modules: default: roots: lmod: ...  (already set there).
+  #
+  # Note: `suppress_gpg_warnings` was removed in Spack 1.x.

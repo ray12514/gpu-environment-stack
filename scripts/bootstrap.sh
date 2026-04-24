@@ -226,7 +226,8 @@ else
 
     echo ""
     echo "--- Step 4: spack compiler find ---"
-    run spack compiler find --scope "${REPO_ROOT}/spack/classes/base"
+    run mkdir -p "${REPO_ROOT}/spack/systems/${SYSTEM_NAME}"
+    run spack compiler find --scope "${REPO_ROOT}/spack/systems/${SYSTEM_NAME}"
 
     # -------------------------------------------------------------------------
     # Step 5: Generate spack.yaml from template

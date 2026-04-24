@@ -1,25 +1,43 @@
+# spack/classes/base/modules.yaml
+#
+# Spack 1.x module generation config for the default module set.
+#
+# Key structural changes from 0.x:
+#   - `type: lmod` replaced by `enable: [lmod]`
+#   - `core_compilers`, `hierarchy`, `projections` must live inside `lmod:`, not at the set level
+#   - `blacklist_implicits` renamed to `hide_implicits`
+#   - `blacklist` renamed to `exclude`
+#
+# The double-colon on `default::` intentionally overrides all lower-precedence
+# module configs (system, user) so this file is the sole source of truth.
+
 modules:
   default::
-    type: lmod
-    core_compilers:
-      - gcc@system
-    hierarchy:
-      - mpi
+    enable:
+      - lmod
     roots:
       lmod: <SITE_STACK_ROOT>/modules/lmod
 
-    projections:
-      # GPU-accelerated packages: version-arch suffix distinguishes the build
-      kokkos:  "gpu-stack/kokkos/{version}-{variants.amdgpu_target}"
-      raja:    "gpu-stack/raja/{version}-{variants.amdgpu_target}"
-      amrex:   "gpu-stack/amrex/{version}-{variants.amdgpu_target}"
-      heffte:  "gpu-stack/heffte/{version}-{variants.amdgpu_target}"
-      # All other packages: version only
-      all:     "gpu-stack/{name}/{version}"
-
     lmod:
-      blacklist_implicits: true
-      blacklist:
+      core_compilers:
+        - gcc@system
+      hierarchy:
+        - mpi
+
+      # hide_implicits: only user-explicitly-installed packages appear in
+      # `module avail`; autoloaded dependencies are still loaded but hidden.
+      hide_implicits: true
+
+      projections:
+        # GPU-accelerated packages: version-arch suffix distinguishes the build
+        kokkos:  "gpu-stack/kokkos/{version}-{variants.amdgpu_target}"
+        raja:    "gpu-stack/raja/{version}-{variants.amdgpu_target}"
+        amrex:   "gpu-stack/amrex/{version}-{variants.amdgpu_target}"
+        heffte:  "gpu-stack/heffte/{version}-{variants.amdgpu_target}"
+        # All other packages: version only
+        all:     "gpu-stack/{name}/{version}"
+
+      exclude:
         # Category A externals — never generate module files for these
         - hip
         - rocm-opencl-runtime
@@ -38,5 +56,5 @@ modules:
         - llvm-amdgpu
         - rocm-device-libs
         - hsa-rocr-dev
-      verbose: true
+
       hash_length: 0   # human-readable module names; no hash suffix

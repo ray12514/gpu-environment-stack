@@ -6,6 +6,12 @@
 #
 # The `providers` block prevents Spack from silently resolving abstract
 # dependencies (mpi, blas, lapack) to packages we do not want to build.
+#
+# Compiler configuration (Spack 1.x):
+# In Spack 1.x, compilers are declared as external packages in packages.yaml
+# using extra_attributes: compilers: — NOT in a separate compilers.yaml.
+# The placeholder entries below are templates; real paths/versions are filled
+# in at bootstrap time by `spack compiler find` (which now writes here).
 
 packages:
   all:
@@ -18,8 +24,7 @@ packages:
     require:
       # MI250X nodes use AMD Zen 3 (EPYC Milan) CPUs.
       # Adjust if the login/build nodes have a different microarchitecture.
-      - target=zen3
-        when: "@:99"
+      - "target=zen3"
 
   # ---- Category A: Always external, buildable: false ----
   # Vendor-owned. Spack must never attempt to build these.
@@ -69,3 +74,38 @@ packages:
 
   python:
     buildable: false
+
+  # ---- Compilers (Spack 1.x format) ----
+  # In Spack 1.x, compilers are external packages with extra_attributes.
+  # `spack compiler find` (with PrgEnv-amd active) will populate version/paths
+  # and write them here. The template below shows the expected shape.
+  #
+  # gcc (system GCC — used only for Spack's own bootstrap internals):
+  gcc:
+    buildable: false
+    externals:
+      - spec: gcc@<VERSION> languages='c,c++,fortran'
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c:       /usr/bin/gcc
+            cxx:     /usr/bin/g++
+            fortran: /usr/bin/gfortran
+
+  # cce (Cray Compiling Environment — primary stack compiler):
+  cce:
+    buildable: false
+    externals:
+      - spec: cce@<VERSION> languages='c,c++,fortran'
+        prefix: /opt/cray/pe/cce/<VERSION>
+        extra_attributes:
+          compilers:
+            c:       /opt/cray/pe/cce/<VERSION>/bin/craycc
+            cxx:     /opt/cray/pe/cce/<VERSION>/bin/crayCC
+            fortran: /opt/cray/pe/cce/<VERSION>/bin/crayftn
+          modules:
+            - PrgEnv-cray
+            - cce/<VERSION>
+          environment:
+            set:
+              CRAY_CPU_TARGET: x86-milan   # verify with: module show craype-x86-milan
